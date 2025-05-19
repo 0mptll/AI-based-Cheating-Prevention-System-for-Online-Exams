@@ -1,6 +1,7 @@
 import cv2
 from face_detector import FaceDetector
 from head_pose_estimator import HeadPoseEstimator
+from detect_upper_body import detect_upper_body
 
 def main():
     face_detector = FaceDetector("res10_300x300_ssd_iter_140000.caffemodel", "deploy.prototxt.txt")
@@ -20,6 +21,12 @@ def main():
         faces = face_detector.detect_faces(frame)
         face_count = len(faces)
         alert = False
+
+        # Detect torso visibility
+        torso_visible = detect_upper_body(frame)  # 👈 Torso detection here
+        torso_status = "✅ Torso Visible" if torso_visible else "⚠️ Torso Not Visible"
+        torso_color = (0, 255, 0) if torso_visible else (0, 0, 255)
+        cv2.putText(frame, torso_status, (10, 110), cv2.FONT_HERSHEY_SIMPLEX, 0.9, torso_color, 2)
 
         for (x1, y1, x2, y2) in faces:
             cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
@@ -41,7 +48,7 @@ def main():
         if alert:
             cv2.putText(frame, "⚠️ Not Looking Straight!", (10, 70), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 3)
 
-        cv2.imshow("Face + Head Pose Detection", frame)
+        cv2.imshow("Face + Head Pose + Torso Detection", frame)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
