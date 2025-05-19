@@ -28,6 +28,10 @@ def main():
         torso_color = (0, 255, 0) if torso_visible else (0, 0, 255)
         cv2.putText(frame, torso_status, (10, 110), cv2.FONT_HERSHEY_SIMPLEX, 0.9, torso_color, 2)
 
+        # ➕ Multiple face detection warning
+        if face_count > 1:
+            cv2.putText(frame, "⚠️ Multiple Faces Detected!", (10, 150), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 0, 255), 3)
+
         for (x1, y1, x2, y2) in faces:
             cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
 
