@@ -2,10 +2,13 @@ import cv2
 from face_detector import FaceDetector
 from head_pose_estimator import HeadPoseEstimator
 from detect_upper_body import detect_upper_body
+from detect_lip_movement import LipMovementDetector  # ✅ Import Lip Detector
+
 
 def main():
     face_detector = FaceDetector("res10_300x300_ssd_iter_140000.caffemodel", "deploy.prototxt.txt")
     head_pose_estimator = HeadPoseEstimator()
+    lip_movement_detector = LipMovementDetector()  # ✅ Initialize lip movement detector
 
     cap = cv2.VideoCapture(0)
     if not cap.isOpened():
@@ -17,8 +20,6 @@ def main():
         ret, frame = cap.read()
         if not ret:
             break
-
-        # Inside your while True loop, right after face detection:
 
         faces = face_detector.detect_faces(frame)
         face_count = len(faces)
@@ -36,7 +37,6 @@ def main():
 
         for (x1, y1, x2, y2) in faces:
             cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
-
             face_roi = frame[y1:y2, x1:x2]
             if face_roi.size == 0:
                 continue
@@ -50,11 +50,15 @@ def main():
                 if abs(yaw) > 20 or abs(pitch) > 15:
                     alert = True
 
+        # ✅ Lip movement detection
+        if lip_movement_detector.detect(frame):
+            cv2.putText(frame, "💬 Lip Movement Detected!", (10, 190), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 165, 255), 2)
+
         cv2.putText(frame, f"Faces: {face_count}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
         if alert:
             cv2.putText(frame, "⚠️ Not Looking Straight!", (10, 70), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 3)
 
-        cv2.imshow("Face + Head Pose + Torso Detection", frame)
+        cv2.imshow("Face + Head Pose + Torso + Lip Movement Detection", frame)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
