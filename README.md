@@ -19,4 +19,6 @@ python main.py</h1>
 
 <h1>pip install torch torchvision opencv-python pandas</h1>
 
+<h1>pip install ultralytics</h1>
+
 <h1>To Run: python main.py</h1>
