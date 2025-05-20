@@ -17,4 +17,6 @@ deploy.prototxt.txt</h1>
 <h1>set TF_ENABLE_ONEDNN_OPTS=0
 python main.py</h1>
 
+<h1>pip install torch torchvision opencv-python pandas</h1>
+
 <h1>To Run: python main.py</h1>
