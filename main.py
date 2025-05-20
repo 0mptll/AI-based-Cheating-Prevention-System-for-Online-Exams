@@ -2,13 +2,16 @@ import cv2
 from face_detector import FaceDetector
 from head_pose_estimator import HeadPoseEstimator
 from detect_upper_body import detect_upper_body
-from detect_lip_movement import LipMovementDetector  # ✅ Import Lip Detector
+from detect_lip_movement import LipMovementDetector 
+from object_detector import ObjectDetector  # 🔁 NEW
 
 
 def main():
     face_detector = FaceDetector("res10_300x300_ssd_iter_140000.caffemodel", "deploy.prototxt.txt")
     head_pose_estimator = HeadPoseEstimator()
-    lip_movement_detector = LipMovementDetector()  # ✅ Initialize lip movement detector
+    lip_movement_detector = LipMovementDetector()
+    object_detector = ObjectDetector()  # 🔁 NEW
+
 
     cap = cv2.VideoCapture(0)
     if not cap.isOpened():
@@ -24,6 +27,18 @@ def main():
         faces = face_detector.detect_faces(frame)
         face_count = len(faces)
         alert = False
+
+        # 📦 Detect unauthorized objects
+        unauth_objects = object_detector.detect_unauthorized_objects(frame)
+        for (x1, y1, x2, y2, label, conf) in unauth_objects:
+            cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), 2)
+            cv2.putText(frame, f"⚠️ {label} ({conf:.2f})", (x1, y1 - 10),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
+
+        if unauth_objects:
+            cv2.putText(frame, "🚨 Unauthorized Object Detected!", (10, 230),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 0, 255), 2)
+
 
         torso_visible = detect_upper_body(frame)
         torso_status = "✅ Torso Visible" if torso_visible else "⚠️ Torso Not Visible"
