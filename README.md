@@ -23,4 +23,6 @@ python main.py</h1>
 
 <h1>pip install seaborn</h1>
 
+<h1>pip install opencv-python mediapipe numpy</h1>
+
 <h1>To Run: python main.py</h1>
