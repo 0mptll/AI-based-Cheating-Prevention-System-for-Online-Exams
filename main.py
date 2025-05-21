@@ -2,18 +2,20 @@ import cv2
 from face_detector import FaceDetector
 from head_pose_estimator import HeadPoseEstimator
 from detect_upper_body import detect_upper_body
-from detect_lip_movement import LipMovementDetector 
 # from object_detector import ObjectDetector  # 🔁 NEW
 from gaze_tracker import GazeTracker  # ✅ NEW
+from audio_analyzer import AudioAnalyzer  # 🔈 NEW
+
 
 
 
 def main():
     face_detector = FaceDetector("res10_300x300_ssd_iter_140000.caffemodel", "deploy.prototxt.txt")
     head_pose_estimator = HeadPoseEstimator()
-    lip_movement_detector = LipMovementDetector()
     # object_detector = ObjectDetector()  # 🔁 NEW
     gaze_tracker = GazeTracker()  
+    audio_analyzer = AudioAnalyzer()  # 🔈 NEW
+
 
 
 
@@ -68,10 +70,12 @@ def main():
 
                 if abs(yaw) > 20 or abs(pitch) > 15:
                     alert = True
+        
+        # 🔈 Audio-based whisper & rustle detection
+        audio_alert = audio_analyzer.analyze_audio()
+        if audio_alert:
+            cv2.putText(frame, audio_alert, (10, 270), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (128, 0, 255), 2)
 
-        # ✅ Lip movement detection
-        if lip_movement_detector.detect(frame):
-            cv2.putText(frame, "💬 Lip Movement Detected!", (10, 190), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 165, 255), 2)
         
         # ✅ Eye-only gaze detection
         gaze_direction = gaze_tracker.detect_eye_only_gaze_direction(frame)
@@ -87,12 +91,14 @@ def main():
         if alert:
             cv2.putText(frame, "⚠️ Not Looking Straight!", (10, 70), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 3)
 
-        cv2.imshow("Face + Head Pose + Torso + Lip Movement Detection", frame)
+        cv2.imshow("Face + Head Pose + Torso", frame)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
     cap.release()
     cv2.destroyAllWindows()
+    audio_analyzer.close()  # 🔈 Close audio stream on exit
+
 
 if __name__ == "__main__":
     main()
