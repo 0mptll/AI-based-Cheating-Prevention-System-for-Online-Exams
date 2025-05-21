@@ -3,14 +3,18 @@ from face_detector import FaceDetector
 from head_pose_estimator import HeadPoseEstimator
 from detect_upper_body import detect_upper_body
 from detect_lip_movement import LipMovementDetector 
-from object_detector import ObjectDetector  # 🔁 NEW
+# from object_detector import ObjectDetector  # 🔁 NEW
+from gaze_tracker import GazeTracker  # ✅ NEW
+
 
 
 def main():
     face_detector = FaceDetector("res10_300x300_ssd_iter_140000.caffemodel", "deploy.prototxt.txt")
     head_pose_estimator = HeadPoseEstimator()
     lip_movement_detector = LipMovementDetector()
-    object_detector = ObjectDetector()  # 🔁 NEW
+    # object_detector = ObjectDetector()  # 🔁 NEW
+    gaze_tracker = GazeTracker()  
+
 
 
     cap = cv2.VideoCapture(0)
@@ -29,15 +33,15 @@ def main():
         alert = False
 
         # 📦 Detect unauthorized objects
-        unauth_objects = object_detector.detect_unauthorized_objects(frame)
-        for (x1, y1, x2, y2, label, conf) in unauth_objects:
-            cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), 2)
-            cv2.putText(frame, f"⚠️ {label} ({conf:.2f})", (x1, y1 - 10),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
+        # unauth_objects = object_detector.detect_unauthorized_objects(frame)
+        # for (x1, y1, x2, y2, label, conf) in unauth_objects:
+        #     cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), 2)
+        #     cv2.putText(frame, f"⚠️ {label} ({conf:.2f})", (x1, y1 - 10),
+        #                 cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
 
-        if unauth_objects:
-            cv2.putText(frame, "🚨 Unauthorized Object Detected!", (10, 230),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 0, 255), 2)
+        # if unauth_objects:
+        #     cv2.putText(frame, "🚨 Unauthorized Object Detected!", (10, 230),
+        #                 cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 0, 255), 2)
 
 
         torso_visible = detect_upper_body(frame)
@@ -68,6 +72,16 @@ def main():
         # ✅ Lip movement detection
         if lip_movement_detector.detect(frame):
             cv2.putText(frame, "💬 Lip Movement Detected!", (10, 190), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 165, 255), 2)
+        
+        # ✅ Eye-only gaze detection
+        gaze_direction = gaze_tracker.detect_eye_only_gaze_direction(frame)
+        if gaze_direction != "Face or Eyes Not Detected":
+            cv2.putText(frame, f"👁️ Eye Gaze: {gaze_direction}", (10, 270), 
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 0), 2)
+            if gaze_direction in ["Looking Left", "Looking Right"]:
+                cv2.putText(frame, "⚠️ Eye Movement Detected!", (10, 310), 
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
+
 
         cv2.putText(frame, f"Faces: {face_count}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
         if alert:
