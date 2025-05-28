@@ -1,76 +1,54 @@
-# audio_analyzer.py
 import pyaudio
 import numpy as np
-import time
+import webrtcvad
+import torch
+from silero_vad import load_silero_vad, get_speech_timestamps
+from scipy.signal import butter, lfilter
 
 class AudioAnalyzer:
-    def __init__(self, rate=16000, chunk=1024):
-        self.rate = rate
-        self.chunk = chunk
-        self.p = pyaudio.PyAudio()
-        self.stream = self.p.open(format=pyaudio.paInt16,
-                                  channels=1,
-                                  rate=self.rate,
-                                  input=True,
-                                  frames_per_buffer=self.chunk)
-        self.prev_whisper_time = 0
-        self.prev_rustle_time = 0
+    def __init__(self, sample_rate=16000, frame_duration=30):
+        self.sample_rate = sample_rate
+        self.frame_duration = frame_duration
+        self.vad = webrtcvad.Vad()
+        self.vad.set_mode(3)  # Aggressive speech detection
+
+        # Load Silero VAD model ONCE
+        self.model = load_silero_vad()
+
+        self.audio = pyaudio.PyAudio()
+        self.stream = self.audio.open(
+            format=pyaudio.paInt16,
+            channels=1,
+            rate=self.sample_rate,
+            input=True,
+            frames_per_buffer=int(self.sample_rate * frame_duration / 1000)
+        )
 
     def analyze_audio(self):
-        try:
-            data = self.stream.read(self.chunk, exception_on_overflow=False)
-            audio_data = np.frombuffer(data, dtype=np.int16)
-            
-            # Energy
-            rms = np.sqrt(np.mean(audio_data**2))
-            
-            # FFT and normalization
-            fft = np.fft.fft(audio_data)
-            freqs = np.fft.fftfreq(len(fft), 1 / self.rate)
-            magnitude = np.abs(fft)
-            magnitude = magnitude[:len(magnitude)//2]
-            freqs = freqs[:len(freqs)//2]
-            magnitude /= np.max(magnitude) if np.max(magnitude) > 0 else 1
+        audio_data = self.stream.read(
+            int(self.sample_rate * self.frame_duration / 1000),
+            exception_on_overflow=False
+        )
+        audio_np = np.frombuffer(audio_data, dtype=np.int16)
 
-            # Spectral centroid (helps distinguish whisper vs ambient noise)
-            spectral_centroid = np.sum(freqs * magnitude) / np.sum(magnitude)
+        # WebRTC VAD (optional, for extra robustness)
+        frame_length = int(self.sample_rate * self.frame_duration / 1000)
+        speech_detected = self.vad.is_speech(audio_np[:frame_length].tobytes(), self.sample_rate)
 
-            # Whisper band and rustling band
-            low_freq_mag = np.mean(magnitude[(freqs >= 100) & (freqs <= 500)])
-            mid_freq_mag = np.mean(magnitude[(freqs >= 800) & (freqs <= 3000)])
+        # Silero VAD expects float32 torch.Tensor normalized to [-1, 1]
+        audio_float = audio_np.astype(np.float32) / 32768.0
+        audio_tensor = torch.from_numpy(audio_float)
 
-            current_time = time.time()
+        # Use the loaded model as the second argument
+        speech_timestamps = get_speech_timestamps(audio_tensor, self.model)
+        silero_speech_detected = len(speech_timestamps) > 0
 
-            # Whisper detection logic (refined)
-            whisper_detected = (
-                rms < 700 and
-                low_freq_mag > 0.2 and
-                spectral_centroid < 600 and
-                (current_time - self.prev_whisper_time > 2)
-            )
-
-            # Rustling detection logic (unchanged)
-            rustle_detected = (
-                rms > 700 and
-                mid_freq_mag > 0.3 and
-                spectral_centroid > 1200 and
-                (current_time - self.prev_rustle_time > 2)
-            )
-
-            if whisper_detected:
-                self.prev_whisper_time = current_time
-                return "💬 Whisper Detected"
-            elif rustle_detected:
-                self.prev_rustle_time = current_time
-                return "📄 Paper Rustling Detected"
-            else:
-                return None
-        except Exception as e:
-            print(f"[ERROR] Audio processing failed: {e}")
+        if silero_speech_detected or speech_detected:
+            return "🔊 Voice Detected!"
+        else:
             return None
-
 
     def close(self):
         self.stream.stop_stream()
         self.stream.close()
-        self.p.terminate()
+        self.audio.terminate()
