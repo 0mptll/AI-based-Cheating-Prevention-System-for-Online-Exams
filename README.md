@@ -29,4 +29,11 @@ python main.py</h1>
 
 <h1>pipwin install pyaudio</h1>
 
+<h1>Install cmake</h1>
+
+<h1>pip install torch sounddevice numpy, pip install setuptools-rust, pip install torch pyaudio numpy scipy webrtcvad silero-vad,  pip install silero-vad,  pip install webrtcvad-wheels,pip install torchaudio torch sounddevice, pip install torchaudio, python download_vad_models.py</h1>
+<h1>pip install git+https://github.com/openai/whisper.git</h1>
+
+<h1>pip install .\dlib-19.24.99-cp312-cp312-win_amd64.whl</h1>
+
 <h1>To Run: python main.py</h1>
