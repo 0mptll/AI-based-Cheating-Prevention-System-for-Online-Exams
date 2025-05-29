@@ -15,7 +15,7 @@ def detect_upper_body(image):
 
     landmarks = results.pose_landmarks.landmark
     key_ids = [mp_pose.PoseLandmark.LEFT_SHOULDER, mp_pose.PoseLandmark.RIGHT_SHOULDER,
-               mp_pose.PoseLandmark.LEFT_HIP, mp_pose.PoseLandmark.RIGHT_HIP]
+               mp_pose.PoseLandmark.LEFT_ELBOW,mp_pose.PoseLandmark.RIGHT_ELBOW,]
 
     visibility = [landmarks[k.value].visibility for k in key_ids]
     visible = all(v > 0.5 for v in visibility)  # Visibility threshold
