@@ -29,4 +29,6 @@ python main.py</h1>
 
 <h1>pipwin install pyaudio</h1>
 
+<h1>pip install dlib</h1>
+
 <h1>To Run: python main.py</h1>

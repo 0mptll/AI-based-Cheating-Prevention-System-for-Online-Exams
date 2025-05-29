@@ -74,3 +74,4 @@ class AudioAnalyzer:
         self.stream.stop_stream()
         self.stream.close()
         self.audio.terminate()
+
