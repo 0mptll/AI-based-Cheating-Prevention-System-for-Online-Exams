@@ -5,10 +5,14 @@ class ObjectDetector:
     def __init__(self, model_path='yolov8n.pt', device='cpu'):
         self.model = YOLO(model_path)
         self.device = device
-        self.unauthorized_labels = ['cell phone', 'book']  # add more as needed
+        self.authorized_labels = ['person']  # Only allow human
 
     def detect_unauthorized_objects(self, frame):
-        results = self.model.predict(source=frame, device=0 if self.device == 'cuda' else 'cpu', verbose=False)
+        results = self.model.predict(
+            source=frame,
+            device=0 if self.device == 'cuda' else 'cpu',
+            verbose=False
+        )
         detections = results[0].boxes
         unauthorized_objects = []
 
@@ -18,9 +22,8 @@ class ObjectDetector:
             xyxy = detections.xyxy[i].cpu().numpy().astype(int)
             label = self.model.names[cls_id]
 
-            if label in self.unauthorized_labels:
-                unauthorized_objects.append((
-                    xyxy[0], xyxy[1], xyxy[2], xyxy[3], label, conf
-                ))
+            # ✅ Flag as unauthorized if it's NOT a person
+            if label not in self.authorized_labels:
+                unauthorized_objects.append((xyxy[0], xyxy[1], xyxy[2], xyxy[3], label, conf))
 
         return unauthorized_objects
